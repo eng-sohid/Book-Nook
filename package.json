@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@better-auth/mongo-adapter": "^1.7.14",
     "@heroui/react": "^3.2.7",
     "@heroui/styles": "^3.2.7",
     "@hookform/resolvers": "^6.0.2",

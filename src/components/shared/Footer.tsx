@@ -11,10 +11,10 @@ import {
 
 const quickLinks = [
   { name: "Home", href: "/" },
-  { name: "All Books", href: "/main/books" },
-  { name: "Add Book", href: "/main/add-book" },
-  { name: "My Books", href: "/main/my-books" },
-  { name: "My Borrows", href: "/main/my-borrows" },
+  { name: "All Books", href: "/books" },
+  { name: "Add Book", href: "/add-book" },
+  { name: "My Books", href: "/my-books" },
+  { name: "My Borrows", href: "/my-borrows" },
 ];
 
 export default function Footer() {
@@ -71,17 +71,17 @@ export default function Footer() {
 
           <ul className="space-y-4 text-sm text-gray-300">
             <li>
-              <Link href="/main/books" className="hover:text-[#e6bc79]">
+              <Link href="/books" className="hover:text-[#e6bc79]">
                 Browse Collection
               </Link>
             </li>
             <li>
-              <Link href="/auth/register" className="hover:text-[#e6bc79]">
+              <Link href="/register" className="hover:text-[#e6bc79]">
                 Create Account
               </Link>
             </li>
             <li>
-              <Link href="/auth/login" className="hover:text-[#e6bc79]">
+              <Link href="/login" className="hover:text-[#e6bc79]">
                 Sign In
               </Link>
             </li>
@@ -105,7 +105,7 @@ export default function Footer() {
           </div>
 
           <Link
-            href="/main/books"
+            href="/books"
             className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#e6bc79] hover:text-white"
           >
             Explore Books <ArrowRight size={16} />
