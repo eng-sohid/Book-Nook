@@ -1,6 +1,7 @@
-import Categories from "@/components/home/Categories";
 import HeroSlider from "@/components/home/HeroSlider";
 import NewArrivals from "@/components/home/NewArrivals";
+import Categories from "@/components/home/Categories";
+import HowItWorks from "@/components/home/HowItWorks";
 
 export default function HomePage() {
   return (
@@ -8,6 +9,7 @@ export default function HomePage() {
       <HeroSlider />
       <NewArrivals />
       <Categories />
+      <HowItWorks />
     </main>
   );
 }

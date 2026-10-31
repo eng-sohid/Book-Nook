@@ -8,13 +8,13 @@ import { Button, Dropdown } from "@heroui/react";
 
 const publicLinks = [
   { name: "Home", href: "/" },
-  { name: "All Books", href: "/books" },
+  { name: "All Books", href: "/main/books" },
 ];
 
 const privateLinks = [
-  { name: "Add Book", href: "/add-book" },
-  { name: "My Books", href: "/my-books" },
-  { name: "My Borrows", href: "/my-borrows" },
+  { name: "Add Book", href: "/main/add-book" },
+  { name: "My Books", href: "/main/my-books" },
+  { name: "My Borrows", href: "/main/my-borrows" },
 ];
 
 export default function Navbar() {
@@ -121,7 +121,7 @@ export default function Navbar() {
             {!isLoggedIn && (
               <div className="flex gap-3 pt-2">
                 <Link
-                  href="/login"
+                  href="/auth/login"
                   className="flex-1 rounded-xl border border-[#d6d3ca] px-4 py-2 text-center"
                   onClick={() => setMobileOpen(false)}
                 >
@@ -129,7 +129,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  href="/register"
+                  href="/auth/register"
                   className="flex-1 rounded-xl bg-[#183f32] px-4 py-2 text-center text-white"
                   onClick={() => setMobileOpen(false)}
                 >
