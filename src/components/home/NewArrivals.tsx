@@ -64,7 +64,7 @@ export default async function NewArrivals() {
             No books available yet.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {books.map((book) => (
               <article
                 key={book._id}

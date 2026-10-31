@@ -1,11 +1,14 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { jwt } from "better-auth/plugins";
 import { clientPromise } from "../lib/mangodb";
 
 const client = await clientPromise;
 const db = client.db("booknook");
 
 export const auth = betterAuth({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+
   database: mongodbAdapter(db, {
     client,
   }),
@@ -24,4 +27,6 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: ["http://localhost:3000"],
+
+  plugins: [jwt()],
 });
