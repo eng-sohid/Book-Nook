@@ -126,9 +126,9 @@ export default function BorrowTable() {
             <tr key={borrow._id} className="border-b border-[#eeeae1]">
               <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                  {borrow.bookImage ? (
+                  {borrow.bookImage?.trim() ? (
                     <Image
-                      src={borrow.bookImage}
+                      src={borrow.bookImage.trim()}
                       alt={borrow.bookTitle || "Book"}
                       width={48}
                       height={64}

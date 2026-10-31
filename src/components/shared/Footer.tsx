@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   Mail,
@@ -18,6 +21,12 @@ const quickLinks = [
 ];
 
 export default function Footer() {
+  const [year, setYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="bg-[#122e25] px-5 pt-16 text-white md:px-10 lg:px-16">
       <div className="mx-auto grid max-w-7xl gap-12 pb-12 md:grid-cols-2 lg:grid-cols-4">
@@ -116,7 +125,7 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-white/15 py-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center text-xs text-gray-400 md:flex-row">
-          <p>© {new Date().getFullYear()} BookNook. All rights reserved.</p>
+          <p>© {year ?? "2026"} BookNook. All rights reserved.</p>
 
           <p>Made with care for book lovers.</p>
         </div>
