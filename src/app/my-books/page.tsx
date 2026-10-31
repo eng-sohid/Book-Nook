@@ -4,9 +4,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth-client";
+import { getAuthHeaders } from "@/lib/auth-api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
 interface Book {
@@ -45,43 +48,63 @@ export default function MyBooksPage() {
 
   const userEmail = session?.user?.email;
 
-  const fetchMyBooks = async () => {
-    try {
-      if (!API_URL || !userEmail) return;
+  // Fetch user's books
+  const fetchMyBooks = async (): Promise<Book[]> => {
+    if (!API_URL || !userEmail) return [];
 
-      const response = await fetch(`${API_URL}/books`);
+    const response = await fetch(`${API_URL}/books`);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch books");
-      }
-
-      const allBooks: Book[] = await response.json();
-
-      setBooks(
-        allBooks.filter(
-          (book) =>
-            book.addedByEmail?.toLowerCase() === userEmail.toLowerCase(),
-        ),
-      );
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load your books");
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error("Failed to fetch books");
     }
+
+    const allBooks: Book[] = await response.json();
+
+    return allBooks.filter(
+      (book) => book.addedByEmail?.toLowerCase() === userEmail.toLowerCase(),
+    );
   };
 
   useEffect(() => {
-    if (isPending) return;
+    if (isPending || !userEmail) return;
 
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
+    let ignore = false;
+
+    const loadBooks = async () => {
+      try {
+        const myBooks = await fetchMyBooks();
+
+        if (!ignore) {
+          setBooks(myBooks);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!ignore) {
+          toast.error("Failed to load your books");
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBooks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [userEmail, isPending]);
+
+  // Load books after authentication is ready
+  useEffect(() => {
+    if (isPending || !userEmail) return;
 
     fetchMyBooks();
   }, [userEmail, isPending]);
 
+  // Open edit modal
   const openEditModal = (book: Book) => {
     setEditingBook(book);
 
@@ -95,10 +118,12 @@ export default function MyBooksPage() {
     });
   };
 
+  // Close edit modal
   const closeEditModal = () => {
     setEditingBook(null);
   };
 
+  // Handle form changes
   const handleFormChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -112,6 +137,7 @@ export default function MyBooksPage() {
     }));
   };
 
+  // Update book
   const handleUpdate = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -120,23 +146,20 @@ export default function MyBooksPage() {
     setSaving(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/books/${editingBook._id}?userEmail=${encodeURIComponent(userEmail)}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...formData,
-            title: formData.title.trim(),
-            author: formData.author.trim(),
-            image: formData.image.trim(),
-            description: formData.description.trim(),
-            totalCopies: Number(formData.totalCopies),
-          }),
-        },
-      );
+      const headers = await getAuthHeaders();
+
+      const response = await fetch(`${API_URL}/books/${editingBook._id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          ...formData,
+          title: formData.title.trim(),
+          author: formData.author.trim(),
+          image: formData.image.trim(),
+          description: formData.description.trim(),
+          totalCopies: Number(formData.totalCopies),
+        }),
+      });
 
       const result = await response.json();
 
@@ -145,8 +168,12 @@ export default function MyBooksPage() {
       }
 
       toast.success("Book updated successfully!");
+
       closeEditModal();
-      await fetchMyBooks();
+
+      // Updated books fetch করে state update
+      const updatedBooks = await fetchMyBooks();
+      setBooks(updatedBooks);
     } catch (error) {
       console.error(error);
 
@@ -158,18 +185,19 @@ export default function MyBooksPage() {
     }
   };
 
+  // Delete book
   const handleDelete = async () => {
     if (!API_URL || !userEmail || !deletingBook) return;
 
     setDeleting(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/books/${deletingBook._id}?userEmail=${encodeURIComponent(userEmail)}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const headers = await getAuthHeaders();
+
+      const response = await fetch(`${API_URL}/books/${deletingBook._id}`, {
+        method: "DELETE",
+        headers,
+      });
 
       const result = await response.json();
 
@@ -180,6 +208,7 @@ export default function MyBooksPage() {
       setBooks((prev) => prev.filter((book) => book._id !== deletingBook._id));
 
       toast.success("Book deleted successfully!");
+
       setDeletingBook(null);
     } catch (error) {
       console.error(error);
@@ -192,7 +221,8 @@ export default function MyBooksPage() {
     }
   };
 
-  if (isPending || loading) {
+  // Loading state
+  if (isPending || (userEmail && loading)) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#faf9f6]">
         <p className="font-medium text-[#183f32]">Loading your books...</p>
@@ -200,12 +230,15 @@ export default function MyBooksPage() {
     );
   }
 
+  // Login required
   if (!userEmail) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#faf9f6] px-5">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-[#183f32]">Please Login</h2>
+
           <p className="mt-2 text-gray-600">Login to manage your books.</p>
+
           <Link
             href="/login"
             className="mt-5 inline-block rounded-lg bg-[#183f32] px-6 py-3 text-white"
@@ -220,9 +253,11 @@ export default function MyBooksPage() {
   return (
     <main className="min-h-screen bg-[#faf9f6] px-5 py-16">
       <div className="mx-auto max-w-7xl">
+        {/* PAGE HEADER */}
         <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-3xl font-bold text-[#183f32]">My Books</h1>
+
             <p className="mt-2 text-gray-600">
               Manage the books you have added to BookNook.
             </p>
@@ -236,12 +271,15 @@ export default function MyBooksPage() {
           </Link>
         </div>
 
+        {/* BOOK LIST */}
         {books.length === 0 ? (
           <div className="rounded-2xl border border-[#eae7df] bg-white px-6 py-16 text-center">
             <h2 className="text-xl font-bold text-[#183f32]">No Books Found</h2>
+
             <p className="mt-2 text-gray-600">
               You haven&apos;t added any books yet.
             </p>
+
             <Link
               href="/add-book"
               className="mt-6 inline-block rounded-lg bg-[#183f32] px-6 py-3 text-sm font-semibold text-white hover:bg-[#245c47]"
@@ -294,6 +332,7 @@ export default function MyBooksPage() {
                       <span className="text-gray-600">
                         Total: {book.totalCopies}
                       </span>
+
                       <span className="font-semibold text-[#183f32]">
                         Available: {book.availableCopies}
                       </span>
@@ -351,6 +390,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Book Title *
                   </label>
+
                   <input
                     name="title"
                     value={formData.title}
@@ -364,6 +404,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Author *
                   </label>
+
                   <input
                     name="author"
                     value={formData.author}
@@ -377,6 +418,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Category *
                   </label>
+
                   <select
                     name="category"
                     value={formData.category}
@@ -385,6 +427,7 @@ export default function MyBooksPage() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#183f32]"
                   >
                     <option value="">Select category</option>
+
                     {categories.map((category) => (
                       <option key={category} value={category}>
                         {category}
@@ -397,6 +440,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Total Copies *
                   </label>
+
                   <input
                     type="number"
                     name="totalCopies"
@@ -412,6 +456,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Image URL *
                   </label>
+
                   <input
                     type="url"
                     name="image"
@@ -426,6 +471,7 @@ export default function MyBooksPage() {
                   <label className="mb-2 block text-sm font-semibold text-[#183f32]">
                     Description *
                   </label>
+
                   <textarea
                     name="description"
                     value={formData.description}

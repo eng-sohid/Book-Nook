@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { getAuthHeaders } from "@/lib/auth-api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -53,11 +54,11 @@ export default function BookForm() {
     setLoading(true);
 
     try {
+      const headers = await getAuthHeaders();
+
       const response = await fetch(`${API_URL}/books`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           ...formData,
           title: formData.title.trim(),
@@ -65,8 +66,6 @@ export default function BookForm() {
           image: formData.image.trim(),
           description: formData.description.trim(),
           totalCopies: Number(formData.totalCopies),
-          addedByName: session.user.name,
-          addedByEmail: session.user.email,
         }),
       });
 

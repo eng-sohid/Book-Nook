@@ -3,6 +3,9 @@ import { authClient } from "@/lib/auth-client";
 export async function getAuthHeaders() {
   const { data, error } = await authClient.token();
 
+  console.log("JWT Token Data:", data);
+  console.log("JWT Token Error:", error);
+
   if (error || !data?.token) {
     throw new Error("Authentication required. Please login again.");
   }
