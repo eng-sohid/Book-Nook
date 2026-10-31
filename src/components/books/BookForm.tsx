@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,6 +11,7 @@ const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
 export default function BookForm() {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +45,11 @@ export default function BookForm() {
       return;
     }
 
+    if (!session?.user) {
+      toast.error("Please login before adding a book");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -53,7 +60,13 @@ export default function BookForm() {
         },
         body: JSON.stringify({
           ...formData,
+          title: formData.title.trim(),
+          author: formData.author.trim(),
+          image: formData.image.trim(),
+          description: formData.description.trim(),
           totalCopies: Number(formData.totalCopies),
+          addedByName: session.user.name,
+          addedByEmail: session.user.email,
         }),
       });
 
@@ -74,7 +87,7 @@ export default function BookForm() {
         totalCopies: "1",
       });
 
-      router.push("/books");
+      router.push("/my-books");
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -93,12 +106,32 @@ export default function BookForm() {
       className="space-y-6 rounded-2xl border border-[#eae7df] bg-white p-6 shadow-sm md:p-8"
     >
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Book Title */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-[#183f32]">
+            Your Name
+          </label>
+          <input
+            value={session?.user?.name || ""}
+            readOnly
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-[#183f32]">
+            Your Email
+          </label>
+          <input
+            value={session?.user?.email || ""}
+            readOnly
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600 outline-none"
+          />
+        </div>
+
         <div>
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Book Title *
           </label>
-
           <input
             type="text"
             name="title"
@@ -110,12 +143,10 @@ export default function BookForm() {
           />
         </div>
 
-        {/* Author */}
         <div>
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Author Name *
           </label>
-
           <input
             type="text"
             name="author"
@@ -127,12 +158,10 @@ export default function BookForm() {
           />
         </div>
 
-        {/* Category */}
         <div>
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Category *
           </label>
-
           <select
             name="category"
             value={formData.category}
@@ -141,7 +170,6 @@ export default function BookForm() {
             className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#183f32]"
           >
             <option value="">Select category</option>
-
             {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
@@ -150,12 +178,10 @@ export default function BookForm() {
           </select>
         </div>
 
-        {/* Total Copies */}
         <div>
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Total Copies *
           </label>
-
           <input
             type="number"
             name="totalCopies"
@@ -167,12 +193,10 @@ export default function BookForm() {
           />
         </div>
 
-        {/* Image URL */}
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Book Image URL *
           </label>
-
           <input
             type="url"
             name="image"
@@ -184,12 +208,10 @@ export default function BookForm() {
           />
         </div>
 
-        {/* Description */}
         <div className="md:col-span-2">
           <label className="mb-2 block text-sm font-semibold text-[#183f32]">
             Book Description *
           </label>
-
           <textarea
             name="description"
             value={formData.description}
@@ -204,7 +226,7 @@ export default function BookForm() {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !session?.user}
         className="w-full rounded-lg bg-[#183f32] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#245c47] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Adding Book..." : "Add Book"}
