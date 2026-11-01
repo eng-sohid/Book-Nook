@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+
 import {
   BookOpen,
   BookPlus,
@@ -14,9 +15,7 @@ import {
   UserRound,
   Sparkles,
   Library,
-  CalendarDays,
   ShieldCheck,
-  LoaderCircle,
   ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -42,11 +41,7 @@ export default function UserProfilePage() {
   const user = session?.user;
 
   useEffect(() => {
-    if (isPending) return;
-
-    if (!user?.email) {
-      return;
-    }
+    if (isPending || !user?.email) return;
 
     let cancelled = false;
 
@@ -188,7 +183,6 @@ export default function UserProfilePage() {
         >
           {/* Profile Header */}
           <div className="relative overflow-hidden bg-[#183f32] px-6 py-12 text-center sm:px-10 md:py-16">
-            {/* Decorative Circles */}
             <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full border border-white/10" />
             <div className="absolute -right-10 -top-14 h-52 w-52 rounded-full border border-white/10" />
             <div className="absolute -bottom-28 -left-20 h-64 w-64 rounded-full border border-white/10" />
@@ -255,6 +249,7 @@ export default function UserProfilePage() {
 
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
+                href="/my-books"
                 icon={<BookPlus size={24} />}
                 title="Books Added"
                 value={stats?.totalBooksAdded ?? 0}
@@ -263,6 +258,7 @@ export default function UserProfilePage() {
               />
 
               <StatCard
+                href="/my-borrows"
                 icon={<BookOpen size={24} />}
                 title="Total Borrowed"
                 value={stats?.totalBooksBorrowed ?? 0}
@@ -271,6 +267,7 @@ export default function UserProfilePage() {
               />
 
               <StatCard
+                href="/my-borrows"
                 icon={<BookMarked size={24} />}
                 title="Currently Borrowed"
                 value={stats?.currentlyBorrowed ?? 0}
@@ -355,14 +352,16 @@ export default function UserProfilePage() {
   );
 }
 
-// Statistics Card
+// Clickable Statistics Card
 function StatCard({
+  href,
   icon,
   title,
   value,
   description,
   delay,
 }: {
+  href: string;
   icon: React.ReactNode;
   title: string;
   value: number;
@@ -370,30 +369,38 @@ function StatCard({
   delay: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      className="group rounded-2xl border border-[#eae7df] bg-[#faf9f6] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#d9c7a8] hover:bg-white hover:shadow-lg hover:shadow-[#183f32]/5"
+    <Link
+      href={href}
+      className="block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[#b58749] focus-visible:ring-offset-4"
+      aria-label={`View ${title}`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f3eee5] text-[#b58749] transition group-hover:bg-[#183f32] group-hover:text-[#e5c995]">
-          {icon}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay }}
+        whileHover={{ y: -5 }}
+        whileTap={{ scale: 0.98 }}
+        className="group h-full cursor-pointer rounded-2xl border border-[#eae7df] bg-[#faf9f6] p-5 transition-all duration-300 hover:border-[#d9c7a8] hover:bg-white hover:shadow-lg hover:shadow-[#183f32]/5"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f3eee5] text-[#b58749] transition group-hover:bg-[#183f32] group-hover:text-[#e5c995]">
+            {icon}
+          </div>
+
+          <ArrowRight
+            size={17}
+            className="text-[#d9c7a8] transition group-hover:translate-x-1 group-hover:text-[#b58749]"
+          />
         </div>
 
-        <Sparkles
-          size={16}
-          className="text-[#d9c7a8] transition group-hover:text-[#b58749]"
-        />
-      </div>
+        <p className="mt-5 text-sm font-medium text-gray-500">{title}</p>
 
-      <p className="mt-5 text-sm font-medium text-gray-500">{title}</p>
+        <p className="mt-1 text-3xl font-bold tracking-tight text-[#183f32]">
+          {value}
+        </p>
 
-      <p className="mt-1 text-3xl font-bold tracking-tight text-[#183f32]">
-        {value}
-      </p>
-
-      <p className="mt-2 text-xs text-gray-400">{description}</p>
-    </motion.div>
+        <p className="mt-2 text-xs text-gray-400">{description}</p>
+      </motion.div>
+    </Link>
   );
 }
