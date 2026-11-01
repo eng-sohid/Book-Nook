@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { Suspense } from "react";
-import { BookOpen } from "lucide-react";
-import { getBooks } from "@/lib/api";
+"use client";
 
-export const instant = false;
+import Link from "next/link";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { BookOpen, Search, X } from "lucide-react";
+import { getBooks } from "@/lib/api";
 
 interface Book {
   _id: string;
@@ -16,33 +16,155 @@ interface Book {
   availableCopies?: number;
 }
 
-async function BooksList() {
+const categories = [
+  "All Books",
+  "Fiction",
+  "Science",
+  "History",
+  "Kids",
+  "Others",
+];
+
+const mainCategories = ["fiction", "science", "history", "kids"];
+
+async function fetchBooks(): Promise<Book[]> {
   const data = await getBooks();
-  const books: Book[] = Array.isArray(data) ? data : [];
+  return Array.isArray(data) ? data : [];
+}
+
+function BooksList() {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Books");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBooks() {
+      try {
+        const data = await fetchBooks();
+
+        if (!cancelled) {
+          setBooks(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch books:", error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadBooks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredBooks = useMemo(() => {
+    return books.filter((book) => {
+      const category = book.category?.trim().toLowerCase() || "";
+      const searchText = search.trim().toLowerCase();
+
+      const matchesSearch =
+        book.title.toLowerCase().includes(searchText) ||
+        book.author.toLowerCase().includes(searchText);
+
+      let matchesCategory = true;
+
+      if (selectedCategory === "Others") {
+        matchesCategory = !mainCategories.includes(category);
+      } else if (selectedCategory !== "All Books") {
+        matchesCategory = category === selectedCategory.toLowerCase();
+      }
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [books, search, selectedCategory]);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-80 animate-pulse rounded-2xl bg-white"
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
+      {/* Search Bar */}
+      <div className="mx-auto mb-8 max-w-2xl">
+        <div className="flex items-center gap-3 rounded-xl border border-[#eae7df] bg-white px-4 py-3 shadow-sm focus-within:border-[#183f32]">
+          <Search size={20} className="shrink-0 text-gray-400" />
+
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by book name or author..."
+            className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-400"
+          />
+
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              aria-label="Clear search"
+              className="text-gray-400 transition hover:text-[#183f32]"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Category Filter */}
+      <div className="mb-9 flex flex-wrap justify-center gap-3">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setSelectedCategory(category)}
+            className={`rounded-full border px-5 py-2.5 text-xs font-bold transition ${
+              selectedCategory === category
+                ? "border-[#183f32] bg-[#183f32] text-white"
+                : "border-[#eae7df] bg-white text-[#183f32] hover:border-[#183f32]"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {/* Books Count */}
       <div className="mb-7 flex items-center justify-between">
         <h2 className="text-lg font-bold text-[#183f32]">Our Collection</h2>
 
-        <p className="text-sm text-gray-500">{books.length} Books Found</p>
+        <p className="text-sm text-gray-500">
+          {filteredBooks.length} Books Found
+        </p>
       </div>
 
-      {books.length === 0 ? (
+      {/* Books */}
+      {filteredBooks.length === 0 ? (
         <div className="rounded-xl bg-white px-5 py-16 text-center">
           <BookOpen className="mx-auto mb-4 text-[#b58749]" size={40} />
 
-          <h3 className="text-xl font-bold text-[#183f32]">
-            No Books Available
-          </h3>
+          <h3 className="text-xl font-bold text-[#183f32]">No Books Found</h3>
 
           <p className="mt-2 text-sm text-gray-500">
-            There are no books in our collection yet.
+            Try another search or category.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-          {books.map((book) => (
+          {filteredBooks.map((book) => (
             <article
               key={book._id}
               className="group overflow-hidden rounded-2xl border border-[#eae7df] bg-white transition duration-300 hover:-translate-y-2 hover:shadow-xl"
