@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { X, BookOpen } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  BookOpen,
+  CalendarDays,
+  UserRound,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { authClient, getJWTToken } from "@/lib/auth-client";
@@ -16,10 +25,19 @@ interface BorrowModalProps {
     image: string;
     availableCopies: number;
   };
-  onBorrowSuccess?: () => void;
+  onBorrowSuccess?: () => void | Promise<void>;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function getLocalDate() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 export default function BorrowModal({
   isOpen,
@@ -29,14 +47,9 @@ export default function BorrowModal({
 }: BorrowModalProps) {
   const { data: session } = authClient.useSession();
 
-  const [borrowDate, setBorrowDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-
+  const [borrowDate, setBorrowDate] = useState(getLocalDate);
   const [returnDate, setReturnDate] = useState("");
   const [loading, setLoading] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleBorrow = async () => {
     if (!session?.user) {
@@ -49,7 +62,7 @@ export default function BorrowModal({
       return;
     }
 
-    if (new Date(returnDate) <= new Date(borrowDate)) {
+    if (returnDate <= borrowDate) {
       toast.error("Return date must be after borrow date");
       return;
     }
@@ -62,14 +75,12 @@ export default function BorrowModal({
     setLoading(true);
 
     try {
-      // Get JWT token
       const token = await getJWTToken();
 
       if (!token) {
         throw new Error("Authentication token not found. Please login again.");
       }
 
-      // Send borrow request with JWT
       const response = await fetch(`${API_URL}/borrows`, {
         method: "POST",
         headers: {
@@ -91,7 +102,7 @@ export default function BorrowModal({
 
       toast.success("Book borrowed successfully!");
 
-      onBorrowSuccess?.();
+      await onBorrowSuccess?.();
       onClose();
     } catch (error) {
       toast.error(
@@ -103,115 +114,191 @@ export default function BorrowModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-[#faf9f6] p-6 shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-2 text-gray-500 hover:bg-gray-200"
-          aria-label="Close modal"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#102b23]/65 px-4 py-6 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !loading) {
+              onClose();
+            }
+          }}
         >
-          <X size={20} />
-        </button>
+          <motion.div
+            initial={{ opacity: 0, y: 25, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ duration: 0.25 }}
+            className="relative my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] border border-[#e9e4da] bg-[#faf9f6] p-6 shadow-2xl sm:p-8"
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              aria-label="Close modal"
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full border border-[#e8e5dc] bg-white text-[#77796f] transition hover:bg-[#183f32] hover:text-white disabled:opacity-50"
+            >
+              <X size={18} />
+            </button>
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-[#183f32]">
-            Borrow This Book
-          </h2>
+            {/* Header */}
+            <div className="mb-7 pr-8">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#183f32] text-[#e5c995]">
+                <BookOpen size={23} />
+              </div>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Confirm your information and borrowing dates.
-          </p>
-        </div>
+              <div className="flex items-center gap-2 text-[10px] font-bold tracking-[2px] text-[#b58749]">
+                <Sparkles size={13} />
+                BOOKNOOK LIBRARY
+              </div>
 
-        <div className="mb-6 flex items-center gap-4 rounded-xl border border-[#e8e5dc] bg-white p-4">
-          {book.image ? (
-            <Image
-              src={book.image}
-              alt={book.title}
-              width={70}
-              height={95}
-              unoptimized
-              className="h-24 w-16 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="flex h-24 w-16 items-center justify-center rounded-lg bg-gray-100">
-              <BookOpen size={25} />
+              <h2 className="mt-2 font-serif text-3xl font-bold text-[#183f32]">
+                Borrow This Book
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#77796f]">
+                Confirm your information and choose your borrowing dates.
+              </p>
             </div>
-          )}
 
-          <div>
-            <h3 className="font-bold text-[#183f32]">{book.title}</h3>
+            {/* Selected Book */}
+            <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[#e8e5dc] bg-white p-4">
+              {book.image?.trim() ? (
+                <Image
+                  src={book.image.trim()}
+                  alt={book.title}
+                  width={70}
+                  height={95}
+                  unoptimized
+                  className="h-24 w-16 rounded-lg object-cover shadow-md"
+                />
+              ) : (
+                <div className="flex h-24 w-16 items-center justify-center rounded-lg bg-[#183f32] text-[#e5c995]">
+                  <BookOpen size={25} />
+                </div>
+              )}
 
-            <p className="mt-1 text-sm text-gray-500">
-              Available Copies: {book.availableCopies}
-            </p>
-          </div>
-        </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#b58749]">
+                  Selected Book
+                </p>
 
-        <div className="mb-5 space-y-3 rounded-xl bg-white p-4">
-          <div>
-            <label className="text-sm font-semibold text-gray-600">
-              Your Name
-            </label>
+                <h3 className="mt-2 line-clamp-2 font-serif text-lg font-bold text-[#183f32]">
+                  {book.title}
+                </h3>
 
-            <input
-              value={session?.user?.name || ""}
-              readOnly
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
-            />
-          </div>
+                <p className="mt-2 text-xs text-[#77796f]">
+                  Available Copies:{" "}
+                  <span className="font-bold text-[#183f32]">
+                    {book.availableCopies}
+                  </span>
+                </p>
+              </div>
+            </div>
 
-          <div>
-            <label className="text-sm font-semibold text-gray-600">
-              Your Email
-            </label>
+            {/* User Information */}
+            <div className="mb-6 space-y-4 rounded-2xl border border-[#e8e5dc] bg-white p-5">
+              <div className="flex items-center gap-2">
+                <UserRound size={16} className="text-[#b58749]" />
+                <label className="text-xs font-bold uppercase tracking-[1px] text-[#183f32]">
+                  Your Information
+                </label>
+              </div>
 
-            <input
-              value={session?.user?.email || ""}
-              readOnly
-              className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none"
-            />
-          </div>
-        </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-[#77796f]">
+                  Full Name
+                </label>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[#183f32]">
-              Borrow Date
-            </label>
+                <div className="flex items-center gap-3 rounded-xl border border-[#eeeae1] bg-[#faf9f6] px-4 py-3">
+                  <UserRound size={16} className="text-[#b58749]" />
+                  <input
+                    value={session?.user?.name || ""}
+                    readOnly
+                    className="w-full bg-transparent text-sm font-medium text-[#183f32] outline-none"
+                  />
+                </div>
+              </div>
 
-            <input
-              type="date"
-              value={borrowDate}
-              min={borrowDate}
-              onChange={(event) => setBorrowDate(event.target.value)}
-              className="w-full rounded-lg border border-[#e8e5dc] bg-white px-3 py-2 outline-none focus:border-[#183f32]"
-            />
-          </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-[#77796f]">
+                  Email Address
+                </label>
 
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[#183f32]">
-              Return Date
-            </label>
+                <div className="flex items-center gap-3 rounded-xl border border-[#eeeae1] bg-[#faf9f6] px-4 py-3">
+                  <Mail size={16} className="text-[#b58749]" />
+                  <input
+                    value={session?.user?.email || ""}
+                    readOnly
+                    className="w-full bg-transparent text-sm font-medium text-[#183f32] outline-none"
+                  />
+                </div>
+              </div>
+            </div>
 
-            <input
-              type="date"
-              value={returnDate}
-              min={borrowDate}
-              onChange={(event) => setReturnDate(event.target.value)}
-              className="w-full rounded-lg border border-[#e8e5dc] bg-white px-3 py-2 outline-none focus:border-[#183f32]"
-            />
-          </div>
-        </div>
+            {/* Borrowing Dates */}
+            <div className="mb-7">
+              <div className="mb-4 flex items-center gap-2">
+                <CalendarDays size={17} className="text-[#b58749]" />
+                <h3 className="text-sm font-bold text-[#183f32]">
+                  Select Borrowing Dates
+                </h3>
+              </div>
 
-        <button
-          onClick={handleBorrow}
-          disabled={loading || !session?.user || book.availableCopies <= 0}
-          className="w-full rounded-xl bg-[#183f32] px-5 py-3 font-semibold text-white transition hover:bg-[#245c47] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loading ? "Processing..." : "Confirm Borrow"}
-        </button>
-      </div>
-    </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-[#77796f]">
+                    Borrow Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={borrowDate}
+                    min={getLocalDate()}
+                    onChange={(event) => setBorrowDate(event.target.value)}
+                    className="w-full rounded-xl border border-[#e8e5dc] bg-white px-3 py-3 text-sm text-[#183f32] outline-none transition focus:border-[#b58749] focus:ring-2 focus:ring-[#b58749]/10"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-[#77796f]">
+                    Return Date
+                  </label>
+
+                  <input
+                    type="date"
+                    value={returnDate}
+                    min={borrowDate || getLocalDate()}
+                    onChange={(event) => setReturnDate(event.target.value)}
+                    className="w-full rounded-xl border border-[#e8e5dc] bg-white px-3 py-3 text-sm text-[#183f32] outline-none transition focus:border-[#b58749] focus:ring-2 focus:ring-[#b58749]/10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Confirm Button */}
+            <button
+              type="button"
+              onClick={handleBorrow}
+              disabled={loading || !session?.user || book.availableCopies <= 0}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#183f32] px-5 py-4 text-sm font-bold text-white shadow-lg shadow-[#183f32]/15 transition-all hover:-translate-y-0.5 hover:bg-[#245c47] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <BookOpen size={18} />
+              {loading ? "Processing..." : "Confirm Borrow"}
+            </button>
+
+            {/* Security Note */}
+            <div className="mt-5 flex items-center justify-center gap-2 text-[11px] text-[#858276]">
+              <ShieldCheck size={14} className="text-[#b58749]" />
+              Your information is securely protected.
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
