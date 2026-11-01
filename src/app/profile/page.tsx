@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { authClient, getJWTToken } from "@/lib/auth-client";
+import EditProfileModal from "@/components/profile/EditProfileModal";
+import { toast } from "@/lib/toast";
+
+//toast massege
+toast.success("Logged out successfully!");
+toast.error("Failed to log out. Please try again.");
 
 import {
   BookOpen,
@@ -18,10 +25,6 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
-import { toast } from "sonner";
-
-import { authClient, getJWTToken } from "@/lib/auth-client";
-import EditProfileModal from "@/components/profile/EditProfileModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

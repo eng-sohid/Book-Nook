@@ -9,7 +9,7 @@ import {
 } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BookOpen,
@@ -63,6 +63,11 @@ const inputClass =
   "w-full rounded-xl border border-[#eae7df] bg-[#fcfbf9] px-4 py-3 text-sm text-[#183f32] outline-none transition placeholder:text-gray-400 focus:border-[#183f32] focus:bg-white focus:ring-4 focus:ring-[#183f32]/5";
 
 export default function MyBooksPage() {
+  //toast massege
+  toast.success("Book updated successfully!");
+  toast.success("Book deleted successfully!");
+  toast.error("Failed to delete book.");
+
   const { data: session, isPending } = authClient.useSession();
 
   const [books, setBooks] = useState<Book[]>([]);

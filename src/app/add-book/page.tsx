@@ -1,5 +1,10 @@
 import BookForm from "@/components/books/BookForm";
+import { toast } from "@/lib/toast";
 import { BookPlus, Sparkles } from "lucide-react";
+
+//toast massege
+toast.success("Book added successfully!");
+toast.error("Failed to add book. Please try again.");
 
 export default function AddBookPage() {
   return (
