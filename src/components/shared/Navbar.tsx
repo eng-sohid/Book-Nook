@@ -10,6 +10,7 @@ import {
   UserRound,
   ChevronDown,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
@@ -32,6 +33,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const { data: session, isPending } = authClient.useSession();
 
@@ -39,6 +41,8 @@ export default function Navbar() {
   const user = session?.user;
 
   const links = isLoggedIn ? [...publicLinks, ...privateLinks] : publicLinks;
+
+  const userInitial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -108,14 +112,17 @@ export default function Navbar() {
                 onClick={() => setAccountOpen(!accountOpen)}
                 className="flex items-center gap-2 rounded-xl border border-[#e8e5dc] px-3 py-2 text-sm font-semibold text-[#183f32] transition hover:bg-white"
               >
-                {user?.image ? (
+                {user?.image && !imageError ? (
                   <img
                     src={user.image}
                     alt={user.name || "User"}
+                    onError={() => setImageError(true)}
                     className="h-7 w-7 rounded-full object-cover"
                   />
                 ) : (
-                  <UserRound size={19} />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#183f32] text-xs font-bold text-white">
+                    {userInitial}
+                  </div>
                 )}
 
                 <span className="max-w-28 truncate">
@@ -125,22 +132,49 @@ export default function Navbar() {
                 <ChevronDown size={15} />
               </button>
 
+              {/* Account Dropdown */}
               {accountOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-[#e8e5dc] bg-white p-2 shadow-lg">
-                  <div className="border-b border-gray-100 px-3 py-2">
-                    <p className="truncate text-sm font-semibold text-[#183f32]">
-                      {user?.name}
-                    </p>
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-[#e8e5dc] bg-white p-2 shadow-lg">
+                  <div className="border-b border-gray-100 px-3 py-3">
+                    <div className="flex items-center gap-3">
+                      {user?.image && !imageError ? (
+                        <img
+                          src={user.image}
+                          alt={user.name || "User"}
+                          onError={() => setImageError(true)}
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#183f32] text-white">
+                          {userInitial}
+                        </div>
+                      )}
 
-                    <p className="truncate text-xs text-gray-500">
-                      {user?.email}
-                    </p>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#183f32]">
+                          {user?.name || "User"}
+                        </p>
+
+                        <p className="truncate text-xs text-gray-500">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setAccountOpen(false)}
+                    className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#183f32] transition hover:bg-[#f3f5f1]"
+                  >
+                    <UserRound size={16} />
+                    My Profile
+                  </Link>
 
                   <button
                     onClick={handleLogout}
                     disabled={loggingOut}
-                    className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                    className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                   >
                     <LogOut size={16} />
                     {loggingOut ? "Logging out..." : "Logout"}
@@ -196,15 +230,39 @@ export default function Navbar() {
               <>
                 {isLoggedIn ? (
                   <>
-                    <div className="border-t border-[#e8e5dc] pt-4">
-                      <p className="font-semibold text-[#183f32]">
-                        {user?.name}
-                      </p>
+                    <div className="flex items-center gap-3 border-t border-[#e8e5dc] pt-4">
+                      {user?.image && !imageError ? (
+                        <img
+                          src={user.image}
+                          alt={user.name || "User"}
+                          onError={() => setImageError(true)}
+                          className="h-11 w-11 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#183f32] font-bold text-white">
+                          {userInitial}
+                        </div>
+                      )}
 
-                      <p className="mt-1 text-xs text-gray-500">
-                        {user?.email}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-[#183f32]">
+                          {user?.name}
+                        </p>
+
+                        <p className="truncate text-xs text-gray-500">
+                          {user?.email}
+                        </p>
+                      </div>
                     </div>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 font-medium text-[#183f32]"
+                    >
+                      <UserRound size={17} />
+                      My Profile
+                    </Link>
 
                     <button
                       onClick={handleLogout}

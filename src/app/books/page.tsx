@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { BookOpen } from "lucide-react";
 import { getBooks } from "@/lib/api";
 
+export const instant = false;
+
 interface Book {
   _id: string;
   title: string;

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { RotateCcw, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient, getJWTToken } from "@/lib/auth-client";
 
 interface Borrow {
   _id: string;
@@ -27,44 +27,70 @@ export default function BorrowTable() {
   const [returningId, setReturningId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isPending) return;
+    if (isPending || !session?.user?.email) return;
 
-    if (!session?.user?.email) {
-      return;
-    }
+    let cancelled = false;
 
     const fetchBorrows = async () => {
       try {
-        const response = await fetch(
-          `${API_URL}/borrows?userEmail=${encodeURIComponent(
-            session.user.email,
-          )}`,
-        );
+        const token = await getJWTToken();
 
-        if (!response.ok) {
-          throw new Error("Failed to load borrowed books");
+        if (!token) {
+          throw new Error(
+            "Authentication token not found. Please login again.",
+          );
         }
 
+        const response = await fetch(`${API_URL}/borrows`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         const data = await response.json();
-        setBorrows(Array.isArray(data) ? data : []);
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load borrowed books");
+        }
+
+        if (!cancelled) {
+          setBorrows(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Something went wrong",
-        );
+        if (!cancelled) {
+          toast.error(
+            error instanceof Error ? error.message : "Something went wrong",
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBorrows();
-  }, [session, isPending]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.email, isPending]);
 
   const handleReturn = async (borrow: Borrow) => {
     setReturningId(borrow._id);
 
     try {
+      const token = await getJWTToken();
+
+      if (!token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+
       const response = await fetch(`${API_URL}/borrows/${borrow._id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();
@@ -87,7 +113,7 @@ export default function BorrowTable() {
     }
   };
 
-  if (isPending || (!!session?.user?.email && loading)) {
+  if (isPending || (session?.user?.email && loading)) {
     return (
       <div className="py-16 text-center text-[#183f32]">
         Loading borrowed books...

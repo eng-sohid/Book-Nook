@@ -8,7 +8,7 @@ import { ArrowLeft, BookOpen, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import BorrowModal from "@/components/borrow/BorrowModal";
-import { authClient } from "@/lib/auth-client";
+import { authClient, getJWTToken } from "@/lib/auth-client";
 
 interface Book {
   _id: string;
@@ -79,22 +79,36 @@ function BookDetailsContent() {
     try {
       setCheckingBorrow(true);
 
-      const response = await fetch(
-        `${API_URL}/borrows?userEmail=${encodeURIComponent(session.user.email)}`,
-      );
+      // Get JWT Token
+      const token = await getJWTToken();
 
-      if (!response.ok) {
-        throw new Error("Failed to check borrow status");
+      if (!token) {
+        throw new Error("Authentication token not found. Please login again.");
       }
 
-      const data: Borrow[] = await response.json();
+      // Fetch current user's borrow records
+      const response = await fetch(`${API_URL}/borrows`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const alreadyBorrowed = data.some(
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to check borrow status");
+      }
+
+      const borrows: Borrow[] = Array.isArray(data) ? data : [];
+
+      const alreadyBorrowed = borrows.some(
         (borrow) => borrow.bookId === id && borrow.status === "borrowed",
       );
 
       setHasBorrowed(alreadyBorrowed);
     } catch (error) {
+      setHasBorrowed(false);
+
       toast.error(
         error instanceof Error
           ? error.message
@@ -103,15 +117,33 @@ function BookDetailsContent() {
     } finally {
       setCheckingBorrow(false);
     }
-  }, [id, session, isPending]);
+  }, [id, session?.user?.email, isPending]);
 
+  // Initial Book Fetch
   useEffect(() => {
     if (!id) return;
-    void Promise.resolve().then(fetchBook);
+    void Promise.resolve().then(() => {
+      fetchBook();
+    });
   }, [id, fetchBook]);
 
+  // Initial Borrow Status Check
   useEffect(() => {
-    void Promise.resolve().then(checkBorrowStatus);
+    let cancelled = false;
+
+    const runCheck = async () => {
+      await Promise.resolve();
+
+      if (!cancelled) {
+        await checkBorrowStatus();
+      }
+    };
+
+    void runCheck();
+
+    return () => {
+      cancelled = true;
+    };
   }, [checkBorrowStatus]);
 
   // Loading State
@@ -128,6 +160,7 @@ function BookDetailsContent() {
     return (
       <main className="flex min-h-[70vh] flex-col items-center justify-center bg-[#faf9f6] px-5 text-center">
         <BookOpen size={50} className="mb-4 text-[#c18b45]" />
+
         <h1 className="text-2xl font-bold text-[#183f32]">Book Not Found</h1>
 
         <Link
@@ -235,14 +268,27 @@ function BookDetailsContent() {
                 setModalOpen(true);
               }}
               disabled={borrowDisabled}
-              className="mt-8 w-full rounded-xl bg-[#183f32] px-6 py-3.5 font-semibold text-white transition hover:bg-[#245c47] disabled:cursor-not-allowed disabled:opacity-50"
+              className={`mt-8 w-full rounded-xl px-6 py-3.5 font-semibold text-white transition disabled:cursor-not-allowed ${
+                hasBorrowed
+                  ? "bg-gray-400"
+                  : isUnavailable
+                    ? "bg-gray-400"
+                    : "bg-[#183f32] hover:bg-[#245c47]"
+              }`}
             >
               {hasBorrowed
-                ? "Already Borrowed"
+                ? "Already Borrowed ✓"
                 : isUnavailable
                   ? "Currently Unavailable"
                   : "Borrow This Book"}
             </button>
+
+            {hasBorrowed && (
+              <p className="mt-3 text-center text-sm font-medium text-green-700">
+                You have already borrowed this book. Please return it before
+                borrowing again.
+              </p>
+            )}
           </div>
         </div>
       </div>

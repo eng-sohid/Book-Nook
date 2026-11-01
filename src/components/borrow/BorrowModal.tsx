@@ -5,7 +5,7 @@ import Image from "next/image";
 import { X, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
-import { authClient } from "@/lib/auth-client";
+import { authClient, getJWTToken } from "@/lib/auth-client";
 
 interface BorrowModalProps {
   isOpen: boolean;
@@ -62,15 +62,22 @@ export default function BorrowModal({
     setLoading(true);
 
     try {
+      // Get JWT token
+      const token = await getJWTToken();
+
+      if (!token) {
+        throw new Error("Authentication token not found. Please login again.");
+      }
+
+      // Send borrow request with JWT
       const response = await fetch(`${API_URL}/borrows`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           bookId: book._id,
-          userEmail: session.user.email,
-          userName: session.user.name,
           borrowDate,
           returnDate,
         }),
