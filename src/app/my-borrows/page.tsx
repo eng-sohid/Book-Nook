@@ -1,10 +1,7 @@
 "use client";
 import BorrowTable from "@/components/borrow/BorrowTable";
-import { toast } from "@/lib/toast";
-import { BookOpen, Sparkles } from "lucide-react";
 
-toast.success("Book returned successfully!");
-toast.error("Failed to return the book.");
+import { BookOpen, Sparkles } from "lucide-react";
 
 export default function MyBorrowsPage() {
   return (

@@ -6,7 +6,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Search, X, Sparkles, ArrowUpRight } from "lucide-react";
 import { getBooks } from "@/lib/api";
-import { toast } from "@/lib/toast";
 
 interface Book {
   _id: string;
@@ -29,9 +28,6 @@ const categories = [
 ];
 
 const mainCategories = ["fiction", "science", "history", "kids"];
-
-//toast massege
-toast.error("Failed to load books.");
 
 async function fetchBooks(): Promise<Book[]> {
   const data = await getBooks();

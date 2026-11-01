@@ -18,7 +18,7 @@ import {
 
 import BorrowModal from "@/components/borrow/BorrowModal";
 import { authClient, getJWTToken } from "@/lib/auth-client";
-import { toast } from "@/lib/toast";
+import { toast } from "sonner";
 
 interface Book {
   _id: string;
@@ -36,11 +36,6 @@ interface Borrow {
   bookId: string;
   status: string;
 }
-
-//toast massge
-toast.success("Book borrowed successfully!");
-toast.error("Sorry, this book is currently unavailable.");
-toast.warning("You have already borrowed this book.");
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

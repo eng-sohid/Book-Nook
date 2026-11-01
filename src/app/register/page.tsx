@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 
-import { toast } from "@/lib/toast";
 import {
   BookOpen,
   Eye,
@@ -20,10 +19,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
-
-//Toast massege
-toast.error("Passwords do not match");
-toast.success("Account created successfully! Welcome to BookNook.");
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();

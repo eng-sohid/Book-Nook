@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 
-import { toast } from "@/lib/toast";
-
 import {
   BookOpen,
   Eye,
@@ -20,10 +18,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
-
-//Toast massege
-toast.success("Login successful! Welcome back.");
-toast.error("Invalid email or password.");
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
