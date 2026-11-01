@@ -1,22 +1,13 @@
 import { toast as sonnerToast } from "sonner";
 
-type ToastOptions = {
-  id?: string | number;
-  duration?: number;
-};
-
 export const toast = {
-  success: (message: string, options?: ToastOptions) =>
-    sonnerToast.success(message, options),
+  success: (message: string) => sonnerToast.success(message),
 
-  error: (message: string, options?: ToastOptions) =>
-    sonnerToast.error(message, options),
+  error: (message: string) => sonnerToast.error(message),
 
-  warning: (message: string, options?: ToastOptions) =>
-    sonnerToast.warning(message, options),
+  warning: (message: string) => sonnerToast.warning(message),
 
-  info: (message: string, options?: ToastOptions) =>
-    sonnerToast.info(message, options),
+  info: (message: string) => sonnerToast.info(message),
 
   loading: (message: string) => sonnerToast.loading(message),
 

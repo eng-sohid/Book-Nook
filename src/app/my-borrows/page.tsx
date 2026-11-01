@@ -1,3 +1,4 @@
+"use client";
 import BorrowTable from "@/components/borrow/BorrowTable";
 import { toast } from "@/lib/toast";
 import { BookOpen, Sparkles } from "lucide-react";
